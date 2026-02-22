@@ -3,3 +3,4 @@ uvicorn
 qdrant-client
 sentence-transformers
 python-multipart
+pymupdf

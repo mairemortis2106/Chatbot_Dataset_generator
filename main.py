@@ -3,13 +3,15 @@ from contextlib import asynccontextmanager
 from qdrant_client import QdrantClient
 from qdrant_client.models import VectorParams, Distance, PointStruct
 import uuid
+import fitz 
+import io
 
 from chunker import chunk_text
 from embedding import embed_chunks
 
 client = QdrantClient(
     url="https://qdrantdb.mhas.my.id",
-    api_key="vT2CddA2GODG7NkchvH23P9t3GYUu9Rv",
+    api_key=os.environ.get("QDRANT_API_KEY"),
     timeout=60,
     https=True,
     port=443,
@@ -41,7 +43,30 @@ app = FastAPI(lifespan=lifespan)
 
 @app.post("/upload")
 async def upload(file: UploadFile = File(...)):
-    text = (await file.read()).decode()
+    content = await file.read()
+    
+    # Detect file type
+    filename = file.filename.lower()
+    
+    if filename.endswith(".pdf"):
+        # Extract text from PDF
+        pdf_doc = fitz.open(stream=content, filetype="pdf")
+        text = ""
+        for page in pdf_doc:
+            text += page.get_text()
+        pdf_doc.close()
+    elif filename.endswith(".txt"):
+        text = content.decode("utf-8")
+    else:
+        # Coba decode, fallback ke latin-1
+        try:
+            text = content.decode("utf-8")
+        except UnicodeDecodeError:
+            text = content.decode("latin-1")
+    
+    if not text.strip():
+        raise HTTPException(status_code=400, detail="Tidak ada teks yang bisa diekstrak dari file.")
+    
     chunks = chunk_text(text)
     vectors = embed_chunks(chunks)
     points = [
