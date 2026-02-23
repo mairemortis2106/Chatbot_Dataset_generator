@@ -5,6 +5,7 @@ from qdrant_client.models import VectorParams, Distance, PointStruct
 import uuid
 import fitz 
 import io
+import os
 
 from chunker import chunk_text
 from embedding import embed_chunks
