@@ -13,7 +13,7 @@ from embedding import embed_chunks
 client = QdrantClient(
     url="https://qdrantdb.mhas.my.id",
     api_key=os.environ.get("QDRANT_API_KEY"),
-    timeout=60,
+    timeout=os.environ.get("QDRANT_TIMEOUT"),
     https=True,
     port=443,
 )
@@ -45,12 +45,9 @@ app = FastAPI(lifespan=lifespan)
 @app.post("/upload")
 async def upload(file: UploadFile = File(...)):
     content = await file.read()
-    
-    # Detect file type
     filename = file.filename.lower()
-    
+
     if filename.endswith(".pdf"):
-        # Extract text from PDF
         pdf_doc = fitz.open(stream=content, filetype="pdf")
         text = ""
         for page in pdf_doc:
@@ -59,22 +56,27 @@ async def upload(file: UploadFile = File(...)):
     elif filename.endswith(".txt"):
         text = content.decode("utf-8")
     else:
-        # Coba decode, fallback ke latin-1
         try:
             text = content.decode("utf-8")
         except UnicodeDecodeError:
             text = content.decode("latin-1")
-    
+
     if not text.strip():
         raise HTTPException(status_code=400, detail="Tidak ada teks yang bisa diekstrak dari file.")
-    
+
     chunks = chunk_text(text)
     vectors = embed_chunks(chunks)
     points = [
         PointStruct(id=str(uuid.uuid4()), vector=vector, payload={"text": chunk})
         for chunk, vector in zip(chunks, vectors)
     ]
-    client.upsert(collection_name=COLLECTION, points=points)
+
+    # ✅ Upsert dalam batch kecil
+    BATCH_SIZE = os.environ.get("BATCH_SIZE")
+    for i in range(0, len(points), BATCH_SIZE):
+        batch = points[i:i + BATCH_SIZE]
+        client.upsert(collection_name=COLLECTION, points=batch)
+
     return {"status": "ok", "chunks": len(points)}
 
 @app.get("/test-qdrant")
