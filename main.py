@@ -28,7 +28,7 @@ async def lifespan(app: FastAPI):
         if not exists:
             client.create_collection(
                 collection_name=COLLECTION,
-                vectors_config=VectorParams(size=384, distance=Distance.COSINE)
+                vectors_config=VectorParams(size=768, distance=Distance.COSINE)
             )
             print(f"Collection '{COLLECTION}' created")
         else:
