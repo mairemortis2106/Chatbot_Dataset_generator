@@ -1,4 +1,4 @@
-from fastapi import FastAPI, UploadFile, File
+from fastapi import FastAPI, HTTPException, UploadFile, File
 from contextlib import asynccontextmanager
 from qdrant_client import QdrantClient
 from qdrant_client.models import VectorParams, Distance, PointStruct
