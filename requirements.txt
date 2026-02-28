@@ -4,3 +4,4 @@ qdrant-client
 sentence-transformers
 python-multipart
 pymupdf
+huggingface_hub[hf_xet]
