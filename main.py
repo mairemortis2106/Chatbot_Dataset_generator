@@ -13,7 +13,7 @@ from embedding import embed_chunks
 client = QdrantClient(
     url="https://qdrantdb.mhas.my.id",
     api_key=os.environ.get("QDRANT_API_KEY"),
-    timeout=os.environ.get("QDRANT_TIMEOUT"),
+    timeout=int(os.environ.get("QDRANT_TIMEOUT", 60)),
     https=True,
     port=443,
 )
@@ -72,7 +72,7 @@ async def upload(file: UploadFile = File(...)):
     ]
 
     # ✅ Upsert dalam batch kecil
-    BATCH_SIZE = os.environ.get("BATCH_SIZE")
+    BATCH_SIZE = int(os.environ.get("BATCH_SIZE", 30))
     for i in range(0, len(points), BATCH_SIZE):
         batch = points[i:i + BATCH_SIZE]
         client.upsert(collection_name=COLLECTION, points=batch)
